@@ -4,16 +4,28 @@
 <meta charset="utf-8">
 <title>井字棋AI</title>
 <style>
-.b{display:grid;grid-template-columns:repeat(3,80px);gap:4px}
-.c{width:80px;height:80px;font-size:32px}
+.b{display:grid;grid-template-columns:repeat(3,80px);gap:4px;margin:10px 0;}
+.c{width:80px;height:80px;font-size:32px;cursor:pointer;}
 </style>
 </head>
 <body>
+<div>
+难度：
+<select id="level">
+<option value="easy">简单</option>
+<option value="mid">中等</option>
+<option value="hard">困难</option>
+</select>
+<button onclick="undo()">悔棋</button>
+<button onclick="restart()">重置</button>
+</div>
 <div class="b" id="b"></div>
 <p id="s"></p>
-<button onclick="restart()">重置</button>
+<p>玩家胜：<span id="win">0</span> &nbsp;AI胜：<span id="lose">0</span> &nbsp;平局：<span id="draw">0</span></p>
 <script>
 let board=Array(9).fill(null),h='X',ai='O';
+let history=[];
+let winCnt=0,loseCnt=0,drawCnt=0;
 const b=document.getElementById('b'),s=document.getElementById('s');
 
 function render(){
@@ -29,15 +41,36 @@ checkResult();
 
 function playerMove(i){
 if(board[i])return;
+history.push([...board]);
 board[i]=h;render();
 if(checkResult())return;
 setTimeout(aiMove,300);
 }
 
 function aiMove(){
+const lv=document.getElementById('level').value;
 let best=-1,val=-Infinity;
-for(let i=0;i<9;i++){
-if(!board[i]){
+const empty=[];
+for(let i=0;i<9;i++) if(!board[i]) empty.push(i);
+
+//简单模式随机落子
+if(lv==="easy"){
+best = empty[Math.floor(Math.random()*empty.length)];
+}else if(lv==="mid"){
+//中等模式50%最优，50%随机
+if(Math.random()>0.5){
+best = empty[Math.floor(Math.random()*empty.length)];
+}else{
+for(let i of empty){
+board[i]=ai;
+let score=minimax(board,false);
+board[i]=null;
+if(score>val){val=score;best=i;}
+}
+}
+}else{
+//困难极小极大最优算法
+for(let i of empty){
 board[i]=ai;
 let score=minimax(board,false);
 board[i]=null;
@@ -47,6 +80,7 @@ if(score>val){val=score;best=i;}
 board[best]=ai;render();
 }
 
+//极小极大核心
 function minimax(b,isMax){
 let res=getWinner(b);
 if(res===ai)return 1;
@@ -88,19 +122,31 @@ return null;
 function checkResult(){
 let w=getWinner(board);
 if(w){
-s.textContent=w=='X'?"玩家获胜":"AI获胜";
+if(w==='X'){
+s.textContent="玩家获胜";winCnt++;document.getElementById("win").innerText=winCnt;
+}else{
+s.textContent="AI获胜";loseCnt++;document.getElementById("lose").innerText=loseCnt;
+}
 return true;
 }
 if(!board.includes(null)){
-s.textContent="平局";
+s.textContent="平局";drawCnt++;document.getElementById("draw").innerText=drawCnt;
 return true;
 }
 s.textContent="轮到你落子(X)";
 return false;
 }
 
+//悔棋
+function undo(){
+if(history.length===0) return;
+board = history.pop();
+render();
+}
+
 function restart(){
 board=Array(9).fill(null);
+history=[];
 render();
 }
 render();
