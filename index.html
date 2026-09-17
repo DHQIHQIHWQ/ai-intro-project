@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>井字棋AI</title>
+<style>
+.b{display:grid;grid-template-columns:repeat(3,80px);gap:4px}
+.c{width:80px;height:80px;font-size:32px}
+</style>
+</head>
+<body>
+<div class="b" id="b"></div>
+<p id="s"></p>
+<button onclick="restart()">重置</button>
+<script>
+let board=Array(9).fill(null),h='X',ai='O';
+const b=document.getElementById('b'),s=document.getElementById('s');
+
+function render(){
+b.innerHTML='';
+board.forEach((v,i)=>{
+let d=document.createElement('button');
+d.className='c';d.textContent=v;
+d.onclick=()=>playerMove(i);
+b.appendChild(d);
+})
+checkResult();
+}
+
+function playerMove(i){
+if(board[i])return;
+board[i]=h;render();
+if(checkResult())return;
+setTimeout(aiMove,300);
+}
+
+function aiMove(){
+let best=-1,val=-Infinity;
+for(let i=0;i<9;i++){
+if(!board[i]){
+board[i]=ai;
+let score=minimax(board,false);
+board[i]=null;
+if(score>val){val=score;best=i;}
+}
+}
+board[best]=ai;render();
+}
+
+function minimax(b,isMax){
+let res=getWinner(b);
+if(res===ai)return 1;
+if(res===h)return -1;
+if(!b.includes(null))return 0;
+if(isMax){
+let maxS=-Infinity;
+for(let i=0;i<9;i++){
+if(!b[i]){
+b[i]=ai;
+let sc=minimax(b,false);
+b[i]=null;
+maxS=Math.max(maxS,sc);
+}
+}
+return maxS;
+}else{
+let minS=Infinity;
+for(let i=0;i<9;i++){
+if(!b[i]){
+b[i]=h;
+let sc=minimax(b,true);
+b[i]=null;
+minS=Math.min(minS,sc);
+}
+}
+return minS;
+}
+}
+
+function getWinner(b){
+const win=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+for(let w of win){
+if(b[w[0]]&&b[w[0]]===b[w[1]]&&b[w[0]]===b[w[2]])return b[w[0]];
+}
+return null;
+}
+
+function checkResult(){
+let w=getWinner(board);
+if(w){
+s.textContent=w=='X'?"玩家获胜":"AI获胜";
+return true;
+}
+if(!board.includes(null)){
+s.textContent="平局";
+return true;
+}
+s.textContent="轮到你落子(X)";
+return false;
+}
+
+function restart(){
+board=Array(9).fill(null);
+render();
+}
+render();
+</script>
+</body>
+</html>
